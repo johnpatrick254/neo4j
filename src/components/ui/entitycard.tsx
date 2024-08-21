@@ -3,7 +3,9 @@ import { Card, CardContent, CardDescription, CardFooter } from "./card"
 import Link from "next/link"
 
 export const EntityCard = async ({ title,poster,rating=null,votes=null,runtime=null,genres=null,entity})=>{
-    return <Link href={`http://localhost:3000/${entity}/${title}`}>
+    const baseURL = process.env.NEXT_PUBLIC_BASE_URL
+
+    return <Link href={`${baseURL}/${entity}/${title}`}>
         <Card className="h-60 w-44 shadow-md p-0.5 " >
             <CardContent className="p-1.5 h-3/4 relative text-xs">
                 <Image

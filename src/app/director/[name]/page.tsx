@@ -10,6 +10,7 @@ export default async function Director({ params }: { params: { name: string } })
     const directorName = params.name.replace(/%20/g, ' ')
      
     const directorData = await directorQueries(directorName);
+    const baseURL = process.env.NEXT_PUBLIC_BASE_URL
 
     console.log(directorData)
 
@@ -34,7 +35,7 @@ export default async function Director({ params }: { params: { name: string } })
 
                                         {
                                             directorData.actedInMovies.map((movie, i) => {
-                                                return <p key={i}> <Link href={`http://localhost:3000/movies/${movie.title}`}> <span className="underline mx-1">{movie.title} </span> {movie.role && <span>- played as {movie.role}</span>}</Link></p>
+                                                return <p key={i}> <Link href={`${baseURL}/movies/${movie.title}`}> <span className="underline mx-1">{movie.title} </span> {movie.role && <span>- played as {movie.role}</span>}</Link></p>
                                             })
                                         }
                                     </div>
@@ -44,7 +45,7 @@ export default async function Director({ params }: { params: { name: string } })
                                     <div className="flex flex-nowrap gap-4">
 
                                         {
-                                            directorData.directedMovies.map((movie, i) => <p key={i}> <Link className="underline" href={`http://localhost:3000/movies/${movie}`}>{movie} </Link></p>)
+                                            directorData.directedMovies.map((movie, i) => <p key={i}> <Link className="underline" href={`${baseURL}/movies/${movie}`}>{movie} </Link></p>)
                                         }
 
                                     </div>

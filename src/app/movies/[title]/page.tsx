@@ -8,6 +8,7 @@ export const metadata = {
 
 export default async function Movie({ params }: { params: { title: string } }) {
     const movieName = params.title.replace(/%20/g, ' ')
+    const baseURL = process.env.NEXT_PUBLIC_BASE_URL
 
     const movieData = await movieQuery(movieName);
 
@@ -40,7 +41,7 @@ export default async function Movie({ params }: { params: { title: string } }) {
                                         <h3 className="text-xl font-bold">Actors</h3>
                                         <div className="flex flex-col flex-wrap gap-y-1.5">
                                             {
-                                                movieData.actors.map((actor, i) => <p key={i}> <Link className="underline" href={`http://localhost:3000/actor/${actor}`}>{actor} </Link></p>)
+                                                movieData.actors.map((actor, i) => <p key={i}> <Link className="underline" href={`${baseURL}/actor/${actor}`}>{actor} </Link></p>)
                                             }
                                         </div>
                                     </div>
@@ -49,7 +50,7 @@ export default async function Movie({ params }: { params: { title: string } }) {
                                         <div className="flex flex-col flex-nowrap gap-y-1.5">
 
                                             {
-                                                movieData.directors.map((director, i) => <p key={i}> <Link className="underline" href={`http://localhost:3000/director/${director}`}>{director} </Link></p>)
+                                                movieData.directors.map((director, i) => <p key={i}> <Link className="underline" href={`${baseURL}/director/${director}`}>{director} </Link></p>)
                                             }
 
                                         </div>

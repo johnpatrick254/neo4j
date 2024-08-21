@@ -10,7 +10,7 @@ export default async function Actor({ params }: { params: { name: string } }) {
   const actorName = params.name.replace(/%20/g, ' ')
 
   const actorData = await actorQueries(actorName);
-
+  const baseURL = process.env.NEXT_PUBLIC_BASE_URL
   console.log(actorData)
 
 
@@ -34,7 +34,7 @@ export default async function Actor({ params }: { params: { name: string } }) {
 
                     {
                       actorData.actedInMovies.map((movie, i) => {
-                        return <p key={i}> <Link href={`http://localhost:3000/movies/${movie.title}`}> <span className="underline mx-1">{movie.title} </span> {movie.role && <span>- played as {movie.role}</span>}</Link></p>
+                        return <p key={i}> <Link href={`${baseURL}/movies/${movie.title}`}> <span className="underline mx-1">{movie.title} </span> {movie.role && <span>- played as {movie.role}</span>}</Link></p>
                       })
                     }
                   </div>
@@ -44,7 +44,7 @@ export default async function Actor({ params }: { params: { name: string } }) {
                   <div className="flex flex-nowrap gap-4">
 
                     {
-                      actorData.directedMovies.map((movie, i) => <p key={i}> <Link className="underline" href={`http://localhost:3000/movies/${movie}`}>{movie} </Link></p>)
+                      actorData.directedMovies.map((movie, i) => <p key={i}> <Link className="underline" href={`${baseURL}/movies/${movie}`}>{movie} </Link></p>)
                     }
 
                   </div>
