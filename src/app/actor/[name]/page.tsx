@@ -1,18 +1,20 @@
-import { actorQueries } from "@/llm/gateway";
+import { actorQueries, actorQueryStaticParams } from "@/llm/gateway";
 import Image from "next/image";
 import Link from "next/link";
 
 export const metadata = {
   "title": 'Actor'
 }
-
+export async function generateStaticParams() {
+  const actors = await actorQueryStaticParams()
+  return actors.map((actor) => ({
+    name:actor.name,
+  }))
+}
 export default async function Actor({ params }: { params: { name: string } }) {
   const actorName = params.name.replace(/%20/g, ' ')
-
   const actorData = await actorQueries(actorName);
   const baseURL = process.env.NEXT_PUBLIC_BASE_URL
-  console.log(actorData)
-
 
   return (<>
     <main className="flex min-h-screen flex-col items-center justify-between px-24 py-8">

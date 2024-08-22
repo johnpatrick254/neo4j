@@ -19,11 +19,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         
-        <section className="px-16">
+        <section className="px-40">
           <nav className="px-8 py-4 flex items-center justify-center gap-3">
-            <Link className="underline" href="/movies">Movies</Link>
-            <Link className="underline" href="/actor">Actors</Link>
-            <Link className="underline"  href="/director">Directors</Link>
+            <Link className="underline" href="/movies/page/1">Movies</Link>
+            <Link className="underline" href="/actor/page/1">Actors</Link>
+            <Link className="underline"  href="/director/page/1">Directors</Link>
           </nav>
         {children}
         </section>

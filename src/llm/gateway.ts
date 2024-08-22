@@ -1,6 +1,9 @@
 import { Neo4jDB } from "./neo4j"
 
 
+//
+// FETCH INDIVIDUAL ENTITES
+//
 export const movieQuery = async(title:string) =>{
     const driver = await new Neo4jDB().getConnection()
 
@@ -18,7 +21,6 @@ export const movieQuery = async(title:string) =>{
         return movies?.records[0]?.get('movie')
     }
 }
-
 
 export const actorQueries = async (name: string)=>{
     const driver = await new Neo4jDB().getConnection()
@@ -63,6 +65,11 @@ export const directorQueries = async (name: string) => {
         return directors
     }
 }
+
+//
+// BULK FETCH ENTITIES
+//
+
  type getAllMoviesQueryResponse = {
     imdbRating: number,
     title: string,
@@ -71,6 +78,7 @@ export const directorQueries = async (name: string) => {
     poster:string,
     runtime: number
 }
+
 export const getAllMoviesQuery= async(skip:number)=>{
     const driver = await new Neo4jDB().getConnection()
   
@@ -89,16 +97,19 @@ export const getAllMoviesQuery= async(skip:number)=>{
             } AS movie
 
             SKIP toInteger($skip)
-            LIMIT 30
+            LIMIT 24
                 
             `,
             { skip }
         )
 
         const moviesResults: getAllMoviesQueryResponse[] = moviesQuery?.records?.map(record=>record?.get('movie'))
-        console.log(moviesResults)
-
-        return moviesResults
+        const totalItems = (await session.run(`
+             MATCH(m:Movie) 
+              RETURN COUNT(m) as total;
+                
+            `)).records[0].get('total')
+        return {totalItems,moviesResults}
     }
 }
 
@@ -106,6 +117,7 @@ type getAllActorsQueryResponse = {
     name: string,
     poster: string
 }
+
 export const getAllActorsQuery = async (skip: number) => {
     const driver = await new Neo4jDB().getConnection()
 
@@ -120,15 +132,18 @@ export const getAllActorsQuery = async (skip: number) => {
             } AS actor
 
             SKIP toInteger($skip)
-            LIMIT 30
+            LIMIT 24
             `,
             { skip }
         )
-
+        const totalItems = (await session.run(`
+             MATCH(a:Actor) 
+              RETURN COUNT(a) as total;
+                
+            `)).records[0].get('total')
         const actorsResults: getAllActorsQueryResponse[] = actorsQuery?.records?.map(record => record?.get('actor'))
-        console.log(actorsResults)
 
-        return actorsResults
+        return {totalItems,actorsResults}
     }
 }
 
@@ -136,6 +151,7 @@ type getAllDirectorsQueryResponse = {
     name: string,
     poster: string
 }
+
 export const getAllDirectorsQuery = async (skip: number) => {
     const driver = await new Neo4jDB().getConnection()
 
@@ -150,15 +166,74 @@ export const getAllDirectorsQuery = async (skip: number) => {
             } AS director
 
             SKIP toInteger($skip)
-            LIMIT 30
-                
+            LIMIT 24;
             `,
             { skip }
         )
 
+        const totalItems = (await session.run(`
+             MATCH(d:Director) 
+              RETURN COUNT(d) as total;
+                
+            `)).records[0].get('total')
         const directorsResults: getAllDirectorsQueryResponse[] = directorsQuery?.records?.map(record => record?.get('director'))
-        console.log(directorsResults)
 
-        return directorsResults
+        return {totalItems,directorsResults}
     }
 }
+
+
+// 
+// STATIC PARAM GENERATORS
+//
+export const actorQueryStaticParams = async () => {
+    const driver = await new Neo4jDB().getConnection()
+
+    if (driver) {
+        const session = driver.session()
+
+        const actors = await session.run(
+            `
+            MATCH (a:Actor)-[:ACTED_IN]->(m:Movie)
+            RETURN a.name as name
+            `
+        )
+
+        const actorNames = actors.records.map(record => ({ name: record.get('name') }))
+        return actorNames;
+    }
+}
+
+export const directorQueryStaticParams = async () => {
+    const driver = await new Neo4jDB().getConnection()
+
+    if (driver) {
+        const session = driver.session()
+
+        const director = await session.run(
+            `
+            MATCH (d:Director)-[:DIRECTED]->(m:Movie)
+            RETURN d.name as name
+            `
+        )
+
+        const directorNames = director.records.map(record => ({ name: record.get('name') }))
+        return directorNames;
+    }
+}
+export const movieQueryStaticParams = async () => {
+    const driver = await new Neo4jDB().getConnection()
+
+    if (driver) {
+        const session = driver.session()
+        const movies = await session.run(
+            `
+            MATCH (m:Movie)
+            RETURN m.title as title
+            `
+        )
+        const movieTitles = movies.records.map(record => ({ name: record.get('title') }))
+        return movieTitles;
+    }
+}
+

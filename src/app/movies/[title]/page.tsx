@@ -1,4 +1,4 @@
-import { directorQueries, movieQuery } from "@/llm/gateway";
+import {  movieQuery, movieQueryStaticParams } from "@/llm/gateway";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -6,14 +6,18 @@ export const metadata = {
     "title": 'Movie'
 }
 
+export async function generateStaticParams() {
+    const movies = await movieQueryStaticParams()
+    return movies.map((movie) => ({
+        title: movie.name,
+    }))
+}
+
 export default async function Movie({ params }: { params: { title: string } }) {
     const movieName = params.title.replace(/%20/g, ' ')
     const baseURL = process.env.NEXT_PUBLIC_BASE_URL
 
     const movieData = await movieQuery(movieName);
-
-    console.log(movieData)
-
 
     return (<>
         <main className="flex min-h-screen flex-col items-center justify-between px-24 py-8">

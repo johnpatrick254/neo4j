@@ -1,4 +1,4 @@
-import { directorQueries } from "@/llm/gateway";
+import { directorQueries, directorQueryStaticParams } from "@/llm/gateway";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -6,13 +6,18 @@ export const metadata = {
     "title":'Directors'
 }
 
+export async function generateStaticParams() {
+    const directors = await directorQueryStaticParams()
+    return directors.map((director) => ({
+        name: director.name,
+    }))
+}
+
 export default async function Director({ params }: { params: { name: string } }) {
     const directorName = params.name.replace(/%20/g, ' ')
      
     const directorData = await directorQueries(directorName);
     const baseURL = process.env.NEXT_PUBLIC_BASE_URL
-
-    console.log(directorData)
 
 
     return (<>

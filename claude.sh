@@ -13,10 +13,23 @@ include_patterns=(
 "./*"
 )
 exclude_patterns=(
-"*/node_modules/*"
-"*/.*"
-"*/client/dist/*"
-"./client/package-lock.json"
+    "*/node_modules/*",
+    "*/.*",
+    "*/client/dist/*",
+    "./client/package-lock.json",
+    "./src/*.ico",
+    "./src/*.png",
+    "./src/*.svg",
+    "./src/*.jpg",
+    "./src/*.jpeg",
+    "./src/*.gif",
+    "./public*",
+    "*.ico",
+    "*.png",
+    "*.svg",
+    "*.jpg",
+    "*.jpeg",
+    "*.gif"
 )
 
 

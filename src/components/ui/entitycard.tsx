@@ -2,14 +2,14 @@ import Image from "next/image"
 import { Card, CardContent, CardDescription, CardFooter } from "./card"
 import Link from "next/link"
 
-export const EntityCard = async ({ title,poster,rating=null,votes=null,runtime=null,genres=null,entity})=>{
+export const EntityCard = async ({ title, poster, rating = null, votes = null, runtime = null, genres = null, entity }) => {
     const baseURL = process.env.NEXT_PUBLIC_BASE_URL
 
-    return <Link href={`${baseURL}/${entity}/${title}`}>
-        <Card className="h-60 w-44 shadow-md p-0.5 " >
+    return <Card className="h-48 w-44 shadow-md p-0.5 " >
+        <Link href={`${baseURL}/${entity}/${title}`}>
             <CardContent className="p-1.5 h-3/4 relative text-xs">
                 <Image
-                    src={poster ? poster :"https://image.tmdb.org/t/p/w440_and_h660_face/8LRbYPUVLnFQMs86tg2YbmsGyKB.jpg"}
+                    src={poster ? poster : "https://image.tmdb.org/t/p/w440_and_h660_face/8LRbYPUVLnFQMs86tg2YbmsGyKB.jpg"}
                     alt="entity-image"
                     height={50}
                     width={50}
@@ -23,11 +23,11 @@ export const EntityCard = async ({ title,poster,rating=null,votes=null,runtime=n
                     <p className="truncate text-ellipsis w-40">{title}</p>
                     <div className="flex justify-between">
                         <p> {rating && `Rating: ${rating}`}</p>
-                    <p>{votes && votes}</p>
+                        <p>{votes && votes}</p>
                     </div>
 
                 </CardDescription>
             </CardFooter>
-        </Card>
-    </Link>
+        </Link>
+    </Card>
 }
