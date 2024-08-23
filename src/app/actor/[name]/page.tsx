@@ -1,4 +1,5 @@
 import { actorQueries, actorQueryStaticParams } from "@/llm/gateway";
+import { fromUrlFriendly } from "@/utils/url-parser";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -8,11 +9,11 @@ export const metadata = {
 export async function generateStaticParams() {
   const actors = await actorQueryStaticParams()
   return actors.map((actor) => ({
-    name:actor.name,
+    name: actor.name,
   }))
 }
 export default async function Actor({ params }: { params: { name: string } }) {
-  const actorName = params.name.replace(/%20/g, ' ')
+  const actorName = fromUrlFriendly(params.name)
   const actorData = await actorQueries(actorName);
   const baseURL = process.env.NEXT_PUBLIC_BASE_URL
 
@@ -36,7 +37,7 @@ export default async function Actor({ params }: { params: { name: string } }) {
 
                     {
                       actorData.actedInMovies.map((movie, i) => {
-                        return <p key={i}> <Link href={`${baseURL}/movies/${movie.title}`}> <span className="underline mx-1">{movie.title} </span> {movie.role && <span>- played as {movie.role}</span>}</Link></p>
+                        return <p key={i}> <Link href={`${baseURL}/movies/${movie?.title}`}> <span className="underline mx-1">{movie.title} </span> {movie.role && <span>- played as {movie.role}</span>}</Link></p>
                       })
                     }
                   </div>

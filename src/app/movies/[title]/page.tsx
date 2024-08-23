@@ -1,4 +1,5 @@
 import {  movieQuery, movieQueryStaticParams } from "@/llm/gateway";
+import { fromUrlFriendly} from "@/utils/url-parser";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -14,9 +15,8 @@ export async function generateStaticParams() {
 }
 
 export default async function Movie({ params }: { params: { title: string } }) {
-    const movieName = params.title.replace(/%20/g, ' ')
+    const movieName = fromUrlFriendly(params.title)
     const baseURL = process.env.NEXT_PUBLIC_BASE_URL
-
     const movieData = await movieQuery(movieName);
 
     return (<>

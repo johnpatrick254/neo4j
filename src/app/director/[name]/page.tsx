@@ -1,4 +1,5 @@
 import { directorQueries, directorQueryStaticParams } from "@/llm/gateway";
+import { fromUrlFriendly } from "@/utils/url-parser";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -14,7 +15,7 @@ export async function generateStaticParams() {
 }
 
 export default async function Director({ params }: { params: { name: string } }) {
-    const directorName = params.name.replace(/%20/g, ' ')
+    const directorName = fromUrlFriendly(params.name)
      
     const directorData = await directorQueries(directorName);
     const baseURL = process.env.NEXT_PUBLIC_BASE_URL
@@ -40,7 +41,7 @@ export default async function Director({ params }: { params: { name: string } })
 
                                         {
                                             directorData.actedInMovies.map((movie, i) => {
-                                                return <p key={i}> <Link href={`${baseURL}/movies/${movie.title}`}> <span className="underline mx-1">{movie.title} </span> {movie.role && <span>- played as {movie.role}</span>}</Link></p>
+                                                return <p key={i}> <Link href={`${baseURL}/movies/${movie?.title}`}> <span className="underline mx-1">{movie.title} </span> {movie.role && <span>- played as {movie.role}</span>}</Link></p>
                                             })
                                         }
                                     </div>
