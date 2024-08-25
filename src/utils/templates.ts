@@ -1,4 +1,4 @@
-export const MovieCypherTemplate = `
+export const cypherGenerationTemplate = `
   You are a Neo4j Developer translating user questions into Cypher to answer questions
   about movies and provide recommendations.
   Convert the user's question into a Cypher statement based on the schema.
