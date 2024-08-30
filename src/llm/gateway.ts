@@ -1,28 +1,29 @@
+import { Message } from "@/utils/types"
 import { Neo4jDB } from "./neo4j"
 
 
 //
 // FETCH INDIVIDUAL ENTITES
 //
-export const movieQuery = async(title:string) =>{
+export const movieQuery = async (title: string) => {
     const driver = await new Neo4jDB().getConnection()
 
-    if(driver){
-         const session = driver.session()
+    if (driver) {
+        const session = driver.session()
 
-         const movies = await session.run(
+        const movies = await session.run(
             `
             MATCH (m:Movie {title: "${title}"})<-[:ACTED_IN]-(a:Actor)
             MATCH (m)<-[:DIRECTED]-(d:Director)
             WITH m as movie, collect(DISTINCT a.name) AS actors,collect(DISTINCT d.name)  AS directors
             RETURN movie{.*, actors:actors,directors:directors}
             `
-         )
+        )
         return movies?.records[0]?.get('movie')
     }
 }
 
-export const actorQueries = async (name: string)=>{
+export const actorQueries = async (name: string) => {
     const driver = await new Neo4jDB().getConnection()
 
     if (driver) {
@@ -57,11 +58,11 @@ export const directorQueries = async (name: string) => {
             RETURN d{.*,directedMovies: directedMovies,actedInMovies: actedInMovies
             } AS director
             `,
-            {name}
+            { name }
         )
 
         const directors = directorsQuery.records[0].get('director')
-        
+
         return directors
     }
 }
@@ -70,18 +71,18 @@ export const directorQueries = async (name: string) => {
 // BULK FETCH ENTITIES
 //
 
- type getAllMoviesQueryResponse = {
+type getAllMoviesQueryResponse = {
     imdbRating: number,
     title: string,
     genres: string,
     imdbVotes: number,
-    poster:string,
+    poster: string,
     runtime: number
 }
 
-export const getAllMoviesQuery= async(skip:number)=>{
+export const getAllMoviesQuery = async (skip: number) => {
     const driver = await new Neo4jDB().getConnection()
-  
+
     if (driver) {
         const session = driver.session()
         const moviesQuery = await session.run(
@@ -103,13 +104,14 @@ export const getAllMoviesQuery= async(skip:number)=>{
             { skip }
         )
 
-        const moviesResults: getAllMoviesQueryResponse[] = moviesQuery?.records?.map(record=>record?.get('movie'))
+        const moviesResults: getAllMoviesQueryResponse[] = moviesQuery?.records?.map(record => record?.get('movie'))
         const totalItems = (await session.run(`
              MATCH(m:Movie) 
               RETURN COUNT(m) as total;
                 
             `)).records[0].get('total')
-        return {totalItems,moviesResults}
+        await session.close()
+        return { totalItems, moviesResults }
     }
 }
 
@@ -142,8 +144,8 @@ export const getAllActorsQuery = async (skip: number) => {
                 
             `)).records[0].get('total')
         const actorsResults: getAllActorsQueryResponse[] = actorsQuery?.records?.map(record => record?.get('actor'))
-
-        return {totalItems,actorsResults}
+        await session.close()
+        return { totalItems, actorsResults }
     }
 }
 
@@ -178,7 +180,8 @@ export const getAllDirectorsQuery = async (skip: number) => {
             `)).records[0].get('total')
         const directorsResults: getAllDirectorsQueryResponse[] = directorsQuery?.records?.map(record => record?.get('director'))
 
-        return {totalItems,directorsResults}
+        await session.close()
+        return { totalItems, directorsResults }
     }
 }
 
@@ -200,6 +203,7 @@ export const actorQueryStaticParams = async () => {
         )
 
         const actorNames = actors.records.map(record => ({ name: record.get('name') }))
+        await session.close()
         return actorNames;
     }
 }
@@ -218,6 +222,7 @@ export const directorQueryStaticParams = async () => {
         )
 
         const directorNames = director.records.map(record => ({ name: record.get('name') }))
+        await session.close()
         return directorNames;
     }
 }
@@ -230,10 +235,74 @@ export const movieQueryStaticParams = async () => {
             `
             MATCH (m:Movie)
             RETURN m.title as title
-            `
+            `,
         )
         const movieTitles = movies.records.map(record => ({ name: record.get('title') }))
+        await session.close()
         return movieTitles;
     }
 }
 
+
+export const getSessionMessages = async (sessionId: string) => {
+    const driver = await new Neo4jDB().getConnection()
+    if (driver) {
+        const session = driver.session()
+
+        const messageQuery = await session.run(
+            `
+            MATCH (:Session {id: $sessionId})-[:LAST_RESPONSE]->(last)
+            MATCH path = (start)-[:NEXT*0..25]->(last)
+            WHERE length(path) = 5 OR NOT EXISTS { ()-[:NEXT]->(start) }
+            UNWIND nodes(path) AS response
+            RETURN response.id AS id,
+            response.input AS input,
+            response.output AS output,
+            response.retry AS retry,
+            response.initialResponseId AS initialResponseId,
+            response.createdAt AS createdAt
+            ORDER BY response.createdAt ASC
+            `,
+            { sessionId }
+        )
+
+        const messageMap: { [key: string]: Message } = {}
+        const messages: Message[] = []
+
+        messageQuery.records.forEach((record) => {
+            const query: Message = {
+                text: record.get('input'),
+                _id: record.get('id'),
+                isUserMessage: true
+            }
+            const response: Message = {
+                text: record.get('output'),
+                _id: record.get('id'),
+                isUserMessage: false
+            }
+
+            if (record.get('retry')) {
+                const initialResponseId = record.get('initialResponseId')
+                if (messageMap[initialResponseId]) {
+                    if (!messageMap[initialResponseId].previousResponse) {
+                        messageMap[initialResponseId].previousResponse = []
+                    }
+                    // Check if the response is already in the previousResponse array
+                    const isDuplicate = messageMap[initialResponseId].previousResponse!.some(
+                        prevResponse => prevResponse._id === response._id
+                    )
+                    if (!isDuplicate) {
+                        messageMap[initialResponseId].previousResponse!.unshift(response)
+                    }
+                }
+            } else {
+                messages.push(query, response)
+                messageMap[response._id] = response
+            }
+        })
+
+        await session.close()
+        return messages.reverse()
+    }
+    return []
+}

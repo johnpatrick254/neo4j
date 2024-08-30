@@ -28,10 +28,12 @@ export type User = {
     id:string
 }
 
-export type Message  = {
-    _id: string,
-    isUserMessage: boolean,
-    text: string
+export type Message ={
+    _id: string;
+    isUserMessage: boolean;
+    text: string;
+    previousResponseId?: string;
+    previousResponse?: Message[];
 }
 
 export type CypherRetrievalThroughput = AgentToolInput & {
@@ -50,4 +52,19 @@ export type CypherEvaluationChainInput = {
 export type CypherEvaluationChainOutput = {
     cypher: string;
     errors: string[];
+};
+export type ChatbotResponse = UnpersistedChatbotResponse & {
+    id: string;
+};
+
+type UnpersistedChatbotResponse = {
+    input: string;
+    rephrasedQuestion: string;
+    output: string;
+    cypher: string | undefined;
+};
+
+export type RephraseQuestionInput = {
+    input: string;
+    history: ChatbotResponse[];
 };

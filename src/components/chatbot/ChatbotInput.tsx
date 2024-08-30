@@ -9,6 +9,7 @@ import { Button } from "../ui/button";
 import { toast } from "../ui/use-toast";
 import { Message } from "@/utils/types";
 import { cn } from "@/lib/utils";
+import { WithToolTip } from "../ui/WithToolTip";
 
 interface ChatbotInputProps extends HTMLAttributes<HTMLDivElement> { }
 
@@ -55,35 +56,37 @@ const ChatbotInput: FC<ChatbotInputProps> = ({ className }) => {
           />
           <div className="absolute inset-y-0 right-0 flex py-1.5 pr-1.5">
             <div className="inline-flex items-center px-1 font-sans text-muted-foreground">
-              <Button
-                variant="ghost"
-                type="submit"
-                className="p-0 h-max"
-                
-              >
-                {
-                  isLoading
-                    ?
-                    <StopCircleIcon className="w-7 h-7 rounded-full" />
-                    :
-                    <ArrowUpCircleIcon 
-                    className="w-7 h-7 rounded-full"
-                      onClick={async () => {
-                        const message: Message = {
-                          _id: crypto.randomUUID(),
-                          isUserMessage: true,
-                          text: textareaRef.current.value
-                        };
-                        await handlePromptResponse(message);
-                        textareaRef.current.value = ""
+              {
+                isLoading
+                  ?
+                  <WithToolTip
+                    component={<StopCircleIcon className="w-7 h-7 rounded-full cursor-pointer" />}
+                    text="Stop Query"
+                  />
+                  :
+                  <WithToolTip
+                    component={
+                      <ArrowUpCircleIcon
+                        className="w-7 h-7 rounded-full cursor-pointer"
+                        onClick={async () => {
+                          const message: Message = {
+                            _id: crypto.randomUUID(),
+                            isUserMessage: true,
+                            text: textareaRef.current.value
+                          };
+                          await handlePromptResponse(message);
+                          textareaRef.current.value = ""
 
-                      }}
-                    />
-                }
-              </Button>
+                        }}
+                      />
+                    }
+                    text="Send"
+                  />
+
+              }
             </div>
           </div>
-         
+
         </div>
       </div>
     </div>

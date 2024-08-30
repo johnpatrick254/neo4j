@@ -1,16 +1,15 @@
-"use client";
-
-import { FC, HTMLAttributes, useContext } from "react";
+"use client"
+import { FC, useContext } from "react";
 import { MessagesContext } from "@/context/messages";
 import { cn } from "@/lib/utils";
 import ChatbotMessage from "./ChatbotMessage";
 import { SyncLoader } from "react-spinners"
-import { User } from "@/utils/types";
+import uuid from "react-uuid";
 
-
-const ChatbotMessages = ({ className }) => {
-  const { messages, isLoading, isServingResponse, messagesContainerRef } = useContext(MessagesContext);
+const ChatbotMessages: FC<{ className: string }> = ({ className }) => {
+  const { messages, isLoading, isServingResponse, isFetchingMessages, messagesContainerRef } = useContext(MessagesContext);
   const inverseMessages = [...messages];
+
   return (
     <div
       className={cn(
@@ -18,25 +17,19 @@ const ChatbotMessages = ({ className }) => {
         className
       )}
     >
-      <div className="flex-1 flex-grow" ref={messagesContainerRef}/>
-      <>
-       { (isLoading && !isServingResponse) &&  <SyncLoader size={8} />}
-
-        {inverseMessages.map((message) => (
-          <ChatbotMessage
-            message={message}
-            key={message._id}
-          />
-        ))}
-        <ChatbotMessage
-          message={{
-            _id: "default_message_id",
-            isUserMessage: false,
-            text: `Hello Binge watcher, I'm imdBot! How can I help you today ?`,
-          }}
-          key={"default_message_id"}
-        />
-      </>
+      <div className="flex-1 flex-grow" ref={messagesContainerRef} />
+      {isFetchingMessages ? (
+        <div className="flex justify-center items-center h-full">
+          <SyncLoader size={8} />
+        </div>
+      ) : (
+        <>
+          {(isLoading && !isServingResponse) && <SyncLoader size={8} />}
+          {inverseMessages.map((message) => (
+            <ChatbotMessage message={message} key={uuid()} />
+          ))}
+        </>
+      )}
     </div>
   );
 };
