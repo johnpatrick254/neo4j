@@ -156,6 +156,7 @@ export function extractIds(input: any): string[] {
 }
 
 export async function saveHistory(
+    clientId: string,
     sessionId: string,
     source: string,
     input: string,
@@ -175,55 +176,62 @@ export async function saveHistory(
 
     await graph.refreshSchema()
     const saveHistoryCypher = `
-        MERGE (session:Session { id: $sessionId }) // (1)
+            MERGE (client:Client {id: $clientId})
+            MERGE (session:Session {id: $sessionId})
+            MERGE (client)-[:STARTED]->(session)
 
-        // <2> Create new response
-        CREATE (response:Response {
-        id: randomUuid(),
-        createdAt: datetime(),
-        source: $source,
-        input: $input,
-        output: $output,
-        retry:$retry,
-        initialResponseId:$initialResponseId,
-        rephrasedQuestion: $rephrasedQuestion,
-        cypher: $cypher
-        })
-        CREATE (session)-[:HAS_RESPONSE]->(response)
+            // Create new response
+            CREATE (response:Response {
+            id: randomUuid(),
+            createdAt: datetime(),
+            source: $source,
+            input: $input,
+            output: $output,
+            retry: $retry,
+            initialResponseId: $initialResponseId,
+            rephrasedQuestion: $rephrasedQuestion,
+            cypher: $cypher
+            })
+            CREATE (session)-[:HAS_RESPONSE]->(response)
 
-        WITH session, response
+            WITH session, response
 
-        CALL {
-        WITH session, response
+            CALL {
+            WITH session, response
 
-        // <3> Remove existing :LAST_RESPONSE relationship if it exists
-        MATCH (session)-[lrel:LAST_RESPONSE]->(last)
-        DELETE lrel
+            // Remove existing :LAST_RESPONSE relationship if it exists
+            OPTIONAL MATCH (session)-[lrel:LAST_RESPONSE]->(last)
+            DELETE lrel
 
-        // <4? Create :NEXT relationship
-        CREATE (last)-[:NEXT]->(response)
-        }
+            // Create :NEXT relationship if there was a last response
+            WITH session, response, last
+            WHERE last IS NOT NULL
+            CREATE (last)-[:NEXT]->(response)
+            }
 
-        // <5> Create new :LAST_RESPONSE relationship
-        CREATE (session)-[:LAST_RESPONSE]->(response)
+            // Create new :LAST_RESPONSE relationship
+            CREATE (session)-[:LAST_RESPONSE]->(response)
 
-        // <6> Create relationship to context nodes
-        WITH response
+            // Create relationship to context nodes
+            WITH response
 
-        CALL {
-        WITH response
-        UNWIND $ids AS id
-        MATCH (context)
-        WHERE elementId(context) = id
-        CREATE (response)-[:CONTEXT]->(context)
+            CALL {
+            WITH response
+            UNWIND $ids AS id
+            MATCH (context)
+            WHERE elementId(context) = id
+            CREATE (response)-[:CONTEXT]->(context)
 
-        RETURN count(*) AS count
-        }
+            RETURN count(*) AS count
+            }
 
-        RETURN DISTINCT response.id AS id`;
+            RETURN DISTINCT response.id AS id
+        `;
+
     const res = await graph.query<{ id: string }>(
         saveHistoryCypher,
         {
+            clientId,
             sessionId,
             source,
             input,
@@ -236,7 +244,7 @@ export async function saveHistory(
         },
         "WRITE")
     console.log(res ?? res)
-    return {responseId:res && res.length ? res[0].id : "",initialResponseId};
+    return { responseId: res && res.length ? res[0].id : "", initialResponseId };
 
 }
 export async function getHistory(
@@ -458,14 +466,13 @@ export async function createMovieQueryAndHistoryChain() {
     return RunnableSequence.from([
         RunnablePassthrough.assign({
             history: async ({
-                sessionId,
-                retry,
-                initialResponseId
+                sessionId
             }: {
                 sessionId: string,
                 input: string,
                 retry: boolean,
-                initialResponseId: string
+                initialResponseId: string,
+                clientId: string
             }) => await getHistory(sessionId),
         }),
         RunnablePassthrough.assign({
@@ -473,7 +480,7 @@ export async function createMovieQueryAndHistoryChain() {
                 rephraseChain.invoke({ input, history }),
         }),
         RunnablePassthrough.assign({
-            movieResponse: ({ rephrasedQuestion, sessionId, input, retry,
+            movieResponse: ({ rephrasedQuestion, sessionId, clientId, input, retry,
                 initialResponseId, }) =>
                 cypherRetrievalChain.invoke(
                     { input: input, rephrasedQuestion },
@@ -481,18 +488,19 @@ export async function createMovieQueryAndHistoryChain() {
                         configurable: {
                             sessionId,
                             retry,
-                            initialResponseId
+                            initialResponseId,
+                            clientId
                         }
                     }
                 )
-        }), ({ movieResponse}) => {
+        }), ({ movieResponse }) => {
             return {
-            response: movieResponse.output,
-            responseId: movieResponse.responseIds.responseId,
-            initialResponseId:movieResponse.responseIds.initialResponseId
+                response: movieResponse.output,
+                responseId: movieResponse.responseIds.responseId,
+                initialResponseId: movieResponse.responseIds.initialResponseId
 
+            }
         }
-    }
 
     ]);
 }
@@ -541,6 +549,7 @@ export default async function initCypherRetrievalChain(
             .assign({
                 responseIds: async (input: CypherRetrievalThroughput, options) => {
                     return saveHistory(
+                        options?.metadata.clientId,
                         options?.metadata.sessionId,
                         "cypher",
                         input.input,

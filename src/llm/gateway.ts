@@ -1,4 +1,4 @@
-import { Message } from "@/utils/types"
+import { Message, UserSession } from "@/utils/types"
 import { Neo4jDB } from "./neo4j"
 
 
@@ -244,26 +244,24 @@ export const movieQueryStaticParams = async () => {
 }
 
 
-export const getSessionMessages = async (sessionId: string) => {
+export const getSessionMessages = async (clientId: string, sessionId: string) => {
     const driver = await new Neo4jDB().getConnection()
     if (driver) {
         const session = driver.session()
 
         const messageQuery = await session.run(
             `
-            MATCH (:Session {id: $sessionId})-[:LAST_RESPONSE]->(last)
-            MATCH path = (start)-[:NEXT*0..25]->(last)
-            WHERE length(path) = 5 OR NOT EXISTS { ()-[:NEXT]->(start) }
-            UNWIND nodes(path) AS response
+            MATCH (client:Client {id: $clientId})-[:STARTED]->(s:Session {id: $sessionId})
+            MATCH (s)-[:HAS_RESPONSE*]->(response)
             RETURN response.id AS id,
-            response.input AS input,
-            response.output AS output,
-            response.retry AS retry,
-            response.initialResponseId AS initialResponseId,
-            response.createdAt AS createdAt
+                   response.input AS input,
+                   response.output AS output,
+                   response.retry AS retry,
+                   response.initialResponseId AS initialResponseId,
+                   response.createdAt AS createdAt
             ORDER BY response.createdAt ASC
             `,
-            { sessionId }
+            { clientId, sessionId }
         )
 
         const messageMap: { [key: string]: Message } = {}
@@ -306,3 +304,38 @@ export const getSessionMessages = async (sessionId: string) => {
     }
     return []
 }
+
+
+export const getUserSessions = async (clientId: string): Promise<UserSession[]> => {
+    const driver = await new Neo4jDB().getConnection();
+    if (!driver) {
+        console.error('Failed to connect to Neo4j database');
+        return [];
+    }
+
+    const session = driver.session();
+    try {
+        const result = await session.run(
+            `
+            MATCH (client:Client {id: $clientId})-[:STARTED]->(session:Session)
+            MATCH (session)-[:HAS_RESPONSE]->(firstResponse:Response)
+            WHERE NOT EXISTS((session)-[:HAS_RESPONSE]->(:Response)<-[:NEXT]-(firstResponse))
+            RETURN session.id AS sessionId, firstResponse.input AS firstQuery
+            ORDER BY firstResponse.createdAt DESC
+            `,
+            { clientId }
+        );
+
+        const userSessions: UserSession[] = result.records.map(record => ({
+            id: record.get('sessionId'),
+            firstQuery: record.get('firstQuery')
+        }));
+
+        return userSessions;
+    } catch (error) {
+        console.error('Error fetching user sessions:', error);
+        return [];
+    } finally {
+        await session.close();
+    }
+};

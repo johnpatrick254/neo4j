@@ -41,11 +41,11 @@ const MarkdownLite: FC<MarkdownLiteProps> = ({ text }) => {
   }
 
   return (
-    <>
+    <p>
       {parts.map((part, i) => (
         <Fragment key={i}>{part}</Fragment>
       ))}
-    </>
+    </p>
   );
 };
 

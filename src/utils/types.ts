@@ -24,6 +24,11 @@ export const AgentToolInputSchema = z.object({
 });
 // end::schema[]
 
+export type UserSession = {
+    id:string;
+    firstQuery:string
+}
+
 export type User = {
     id:string
 }

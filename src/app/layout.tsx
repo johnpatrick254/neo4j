@@ -19,16 +19,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} `}>
-        <section className="px-40 min-h-screen">
-          <nav className="px-8 py-4 flex items-center justify-end gap-3">
+      <body className={`${inter.className}`}>
+        
+        <nav className="sticky top-0 z-10 flex h-[57px] w-full items-center justify-center gap-5 border-b bg-background px-4">
             <Link className="underline" href="/">Home</Link>
             <Link className="underline" href="/movies/page/1">Movies</Link>
             <Link className="underline" href="/actor/page/1">Actors</Link>
             <Link className="underline"  href="/director/page/1">Directors</Link>
           </nav>
         {children}
-        </section>
         <Toaster/>
         </body>
     </html>

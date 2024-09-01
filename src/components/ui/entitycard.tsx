@@ -5,7 +5,7 @@ import Link from "next/link"
 export const EntityCard = async ({ title, poster, rating = null, votes = null, runtime = null, genres = null, entity }) => {
     const baseURL = process.env.NEXT_PUBLIC_BASE_URL
 
-    return <Card className="h-48 w-44 shadow-md p-0.5 " >
+    return <Card className="h-48 w-40 shadow-md p-0.5 " >
         <Link href={`${baseURL}/${entity}/${title}`}>
             <CardContent className="p-1.5 h-3/4 relative text-xs">
                 <Image

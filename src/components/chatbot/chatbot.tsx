@@ -7,7 +7,7 @@ import ChatbotInput from "./ChatbotInput";
 import ChatbotMessages from "./ChatbotMessages";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 
-const ChatBot: FC = () => {
+export const ChatBot: FC = () => {
     return (
         <Sheet >
             <div className="fixed xl:right-[5%] bottom-0 w-[94%] lg:w-4/5 xl:w-3/5 bg-card border border-input rounded-t-md">

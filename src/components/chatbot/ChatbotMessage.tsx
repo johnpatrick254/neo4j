@@ -4,10 +4,11 @@ import { FC, useContext, useEffect, useRef, useState } from "react";
 import MarkdownLite from "./MarkdownLite";
 import { Message } from "@/utils/types";
 import { MessagesContext } from "@/context/messages";
-import { ChevronLeft, ChevronRight, Copy, Edit, RotateCw, Save, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Edit, RotateCw, Save, SparklesIcon, X } from "lucide-react";
 import { WithToolTip } from "../ui/WithToolTip";
 import star from "../../../public/star-2-svgrepo-com.svg";
 import Image from "next/image";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 interface ChatbotMessageProps {
   message: Message;
@@ -15,19 +16,43 @@ interface ChatbotMessageProps {
 
 const ChatbotMessage: FC<ChatbotMessageProps> = ({ message }) => {
   const { isLoading, isServingResponse, messages, handlePromptResponse } = useContext(MessagesContext);
-  const previousResponses = message.previousResponse ? [message,...message.previousResponse] : [message];
+  const previousResponses = message.previousResponse ? [message, ...message.previousResponse] : [message];
   const [currentIndex, setCurrentIndex] = useState((previousResponses.length - 1));
   const [editedContent, setEditedContent] = useState(message.text);
   const [isEditing, setIsEditing] = useState(false);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [displayedText, setDisplayedText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const isLatestAIMessage = !message.isUserMessage && messages[0]._id === message._id;
+
   let lastMessage = messages.length > 0 && messages.indexOf(message) === 0;
-  let currentMessage = previousResponses[currentIndex ];
+  let currentMessage = previousResponses[currentIndex];
   useEffect(() => {
     if (isEditing && editTextareaRef.current) {
       editTextareaRef.current.focus();
       adjustTextareaHeight();
     }
   }, [isEditing]);
+
+  useEffect(() => {
+    if (isLatestAIMessage && isServingResponse) {
+      setIsTyping(true);
+      let i = 0;
+      const typingInterval = setInterval(() => {
+        if (i < currentMessage.text.length) {
+          setDisplayedText(currentMessage.text.substring(0, i + 1));
+          i++;
+        } else {
+          clearInterval(typingInterval);
+          setIsTyping(false);
+        }
+      }, 20);
+
+      return () => clearInterval(typingInterval);
+    } else {
+      setDisplayedText(currentMessage.text);
+    }
+  }, [currentMessage.text, isLatestAIMessage, isServingResponse]);
 
   const handleRetry = () => {
     const previousQuery = messages[messages.indexOf(message) + 1];
@@ -88,70 +113,94 @@ const ChatbotMessage: FC<ChatbotMessageProps> = ({ message }) => {
   };
 
   return (
-    <div className="chat-message" key={message._id}>
-      <div
-        className={cn("flex items-end relative mb-6", {
-          "justify-end": message.isUserMessage,
-        })}
-      >
-        {(lastMessage && !message.isUserMessage) && <Image alt="star" src={star} height={50} width={50} className="w-6 relative animate-bounce " />}
-        <div
-          className={cn(
-            "flex flex-col gap-2 text-sm max-w-[60%] rounded-t-lg p-3",
-            {
-              "bg-foreground text-secondary rounded-l-lg text-right":
-                message.isUserMessage,
-            },
-            {
-              "bg-accent text-primary rounded-r-lg text-left":
-                !message.isUserMessage,
-            },
-            {
-              "w-full":
-                isEditing,
-            }
-          )}
-        >
-          {isEditing ? (
-            <textarea
-              ref={editTextareaRef}
-              value={editedContent}
-              onChange={handleTextareaChange}
-              className="bg-transparent border-none focus:ring-0 focus:outline-0 p-0.5 w-full resize-none overflow-hidden"
-              style={{ minHeight: '1.5em' }}
-            />
-          ) : (
-              <MarkdownLite text={currentMessage.text} />
-          )}
-          {message.isUserMessage && !isServingResponse && (
-            <div className={`flex gap-2.5 absolute -bottom-6 right-2 ${isLoading ? "opacity-5" : ""}`}>
+
+    <div className="chat-message text-base" key={message._id}>
+
+    {
+      message.isUserMessage
+      ?
+          <div
+            className={"flex nowrap gap-2.5 items-center relative mb-6 py-2.5 px-3 rounded-2xl bg-foreground text-secondary"}
+          >
+            <Avatar className="min-w-9 self-start min-h-9 text-primary">
+              <AvatarImage src="https://github.com/shadcn5.png" alt="@shadcn" />
+              <AvatarFallback>CN</AvatarFallback>
+            </Avatar>
+            <div
+              className={" flex flex-col gap-5 w-full "}
+            >
               {isEditing ? (
-                <>
-                  <WithToolTip component={<Save onClick={handleSave} className="cursor-pointer" size={18} color="#000000" />} text="Save" />
-                  <WithToolTip component={<X onClick={handleCancel} className="cursor-pointer" size={18} color="#000000" />} text="Cancel" />
-                </>
+                <textarea
+                  ref={editTextareaRef}
+                  value={editedContent}
+                  onChange={handleTextareaChange}
+                  className="bg-transparent border-none focus:ring-0 focus:outline-0 p-0.5 w-full resize-none overflow-hidden"
+                  style={{ minHeight: '1.5em' }}
+                />
               ) : (
-                <WithToolTip component={<Edit onClick={handleEdit} className="cursor-pointer" size={18} color="#000000" />} text="Edit" />
+                isTyping ? (
+                  <MarkdownLite text={displayedText} />
+                ) : (
+                  <MarkdownLite text={currentMessage.text} />
+                )
+              )}
+              {!isServingResponse && (
+                <div className={`flex justify-start gap-2.5  ${isLoading ? "opacity-0" : ""}`}>
+                  {isEditing ? (
+                    <>
+                      <WithToolTip component={<Save onClick={handleSave} className="cursor-pointer  text-white" size={18} />} text="Save" />
+                      <WithToolTip component={<X onClick={handleCancel} className="cursor-pointer  text-white" size={18} />} text="Cancel" />
+                    </>
+                  ) : (
+                    <WithToolTip component={<Edit onClick={handleEdit} className="cursor-pointer text-white" size={18}  />} text="Edit" />
+                  )}
+                </div>
               )}
             </div>
-          )}
-          <div className={`flex gap-2.5 absolute -bottom-6 left-2 ${isLoading ? "opacity-5" : ""}`}>
-            {previousResponses.length > 1 &&
-              <div className="flex items-center gap-1">
-                <ChevronLeft onClick={handlePrevious} className="cursor-pointer" size={15} color="#000000" />
-                { currentIndex + 1}
-                <ChevronRight onClick={handleNext} className="cursor-pointer" size={15} color="#000000" />
-              </div>
-            }
-            {(!message.isUserMessage && lastMessage && messages.length > 1 && !isServingResponse) && (
-              <>
-                <WithToolTip key={'copy'} component={<Copy className="cursor-pointer" onClick={handleCopy} size={18} color="#000000" />} text="Copy" />
-                <WithToolTip key={'retry'} component={<RotateCw className="cursor-pointer" onClick={handleRetry} size={18} color="#000000" />} text="Retry" />
-              </>
-            )}
           </div>
-        </div>
-      </div>
+      :
+          <div className="chat-message" key={message._id}>
+            <div
+              className={"flex nowrap gap-2.5 items-center relative mb-6 bg-accent py-2.5 px-3 rounded-2xl"}
+            >
+              {<SparklesIcon className="min-w-9 self-start min-h-9 rounded-full p-2 relative " />}
+              <div
+                className={'flex flex-col gap-5 w-full'}
+              >
+                {isEditing ? (
+                  <textarea
+                    ref={editTextareaRef}
+                    value={editedContent}
+                    onChange={handleTextareaChange}
+                    className="bg-transparent border-none focus:ring-0 focus:outline-0 p-0.5 w-full resize-none overflow-hidden"
+                    style={{ minHeight: '1.5em' }}
+                  />
+                ) : (
+                  isTyping ? (
+                    <MarkdownLite text={displayedText} />
+                  ) : (
+                    <MarkdownLite text={currentMessage.text} />
+                  )
+                )}
+                <div className={`flex justify-start gap-2.5  ${isLoading ? "opacity-0" : ""}`}>
+                  {previousResponses.length > 1 &&
+                    <div className="flex items-center gap-1">
+                      <ChevronLeft onClick={handlePrevious} className="cursor-pointer" size={15} color="#000000" />
+                      {currentIndex + 1}
+                      <ChevronRight onClick={handleNext} className="cursor-pointer" size={15} color="#000000" />
+                    </div>
+                  }
+                  {(!message.isUserMessage && !isServingResponse) && (
+                    <>
+                      <WithToolTip key={'copy'} component={<Copy className="cursor-pointer" onClick={handleCopy} size={18} color="#000000" />} text="Copy" />
+                      <WithToolTip key={'retry'} component={<RotateCw className="cursor-pointer" onClick={handleRetry} size={18} color="#000000" />} text="Retry" />
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+    }
     </div>
   );
 };
