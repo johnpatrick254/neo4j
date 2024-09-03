@@ -15,7 +15,7 @@ interface ChatbotMessageProps {
 }
 
 const ChatbotMessage: FC<ChatbotMessageProps> = ({ message }) => {
-  const { isLoading, isServingResponse, messages, handlePromptResponse } = useContext(MessagesContext);
+  const { isLoading, isServingResponse, messages, handlePromptResponse, messagesContainerRef } = useContext(MessagesContext);
   const previousResponses = message.previousResponse ? [message, ...message.previousResponse] : [message];
   const [currentIndex, setCurrentIndex] = useState((previousResponses.length - 1));
   const [editedContent, setEditedContent] = useState(message.text);
@@ -24,8 +24,7 @@ const ChatbotMessage: FC<ChatbotMessageProps> = ({ message }) => {
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const isLatestAIMessage = !message.isUserMessage && messages[0]._id === message._id;
-
-  let lastMessage = messages.length > 0 && messages.indexOf(message) === 0;
+  const isLastMessage = messages[0]._id === message._id
   let currentMessage = previousResponses[currentIndex];
   useEffect(() => {
     if (isEditing && editTextareaRef.current) {
@@ -35,7 +34,7 @@ const ChatbotMessage: FC<ChatbotMessageProps> = ({ message }) => {
   }, [isEditing]);
 
   useEffect(() => {
-    if (isLatestAIMessage && isServingResponse) {
+    if (isLatestAIMessage) {
       setIsTyping(true);
       let i = 0;
       const typingInterval = setInterval(() => {
@@ -52,7 +51,7 @@ const ChatbotMessage: FC<ChatbotMessageProps> = ({ message }) => {
     } else {
       setDisplayedText(currentMessage.text);
     }
-  }, [currentMessage.text, isLatestAIMessage, isServingResponse]);
+  }, [currentMessage.text, isLatestAIMessage]);
 
   const handleRetry = () => {
     const previousQuery = messages[messages.indexOf(message) + 1];
@@ -86,6 +85,7 @@ const ChatbotMessage: FC<ChatbotMessageProps> = ({ message }) => {
       });
     }
     setIsEditing(false);
+
   };
 
   const handleCancel = () => {
@@ -93,6 +93,7 @@ const ChatbotMessage: FC<ChatbotMessageProps> = ({ message }) => {
     setEditedContent(message.text);
   };
 
+  
   useEffect(() => {
     if (isEditing && editTextareaRef.current) {
       editTextareaRef.current.focus();
@@ -113,9 +114,7 @@ const ChatbotMessage: FC<ChatbotMessageProps> = ({ message }) => {
   };
 
   return (
-
-    <div className="chat-message text-base" key={message._id}>
-
+    <div className="chat-message text-base" key={message._id} >
     {
       message.isUserMessage
       ?

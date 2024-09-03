@@ -21,7 +21,7 @@ export default function SideBar() {
     const { handleSessionChange, sessions } = useContext(MessagesContext);
     const [mouseOver, setMouseOver] = useState(false);
     return (
-        <aside style={{ width: !mouseOver ? "3.5rem" : "15rem" }} onMouseEnter={() => setMouseOver(true)} onMouseLeave={() => setMouseOver(false)} className={`hidden backdrop-blur-sm aside inset-y fixed overflow-x-hidden left-0 z-20 md:flex h-full flex-col border-r transition-all duration-200 ease-in-out`}>
+        <aside style={{ width: !mouseOver ? "3.5rem" : "15rem" }} onMouseEnter={() => setMouseOver(true)} onMouseLeave={() => setMouseOver(false)} className={`hidden backdrop-blur-md aside inset-y fixed overflow-x-hidden left-0 z-20 md:flex h-full flex-col border-r transition-all duration-200 ease-in-out`}>
             <nav className="grid gap-5 w-full p-2">
                 <Tooltip>
                     <TooltipTrigger asChild>

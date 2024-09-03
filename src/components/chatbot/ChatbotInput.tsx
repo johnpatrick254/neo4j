@@ -15,7 +15,7 @@ import { Textarea } from "../ui/textarea";
 interface ChatbotInputProps extends HTMLAttributes<HTMLDivElement> { }
 
 const ChatbotInput: FC<ChatbotInputProps> = ({ className }) => {
-  const { handlePromptResponse, isLoading, isError, textareaRef } =
+  const { handlePromptResponse, isLoading, isError, textareaRef, messagesContainerRef } =
     useContext(MessagesContext);
 
   if (isError) {
@@ -40,6 +40,11 @@ const ChatbotInput: FC<ChatbotInputProps> = ({ className }) => {
       return () => textarea.removeEventListener('input', adjustHeight);
     }
   }, []);
+
+  const scrollToBottom = () => {
+    console.log(messagesContainerRef.current)
+    messagesContainerRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
   return (
     <div
       className="sticky bottom-0 rounded-2xl border bg-[#FBFBFB]"
@@ -49,8 +54,8 @@ const ChatbotInput: FC<ChatbotInputProps> = ({ className }) => {
         disabled={isLoading}
         onKeyDown={async (e) => {
           if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-
+            scrollToBottom()
+            e.preventDefault()
             const message: Message = {
               _id: crypto.randomUUID(),
               isUserMessage: true,
@@ -77,7 +82,18 @@ const ChatbotInput: FC<ChatbotInputProps> = ({ className }) => {
           component={
             <ArrowUpCircleIcon
               className="w-8 h-8 my-auto text-white bg-black rounded-full cursor-pointer"
+              onClick={async() => {
+                scrollToBottom()
+                const message: Message = {
+                  _id: crypto.randomUUID(),
+                  isUserMessage: true,
+                  text: textareaRef.current.value
+                };
+                await handlePromptResponse(message);
+                textareaRef.current.value = ""
+              }}
             />
+
           }
           text="Send"
         />

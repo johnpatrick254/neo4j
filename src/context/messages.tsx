@@ -12,6 +12,7 @@ import {
 } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
+import PreviousMap from "postcss/lib/previous-map";
 
 interface MessagesProviderProps {
     children: ReactNode;
@@ -119,16 +120,11 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
 
                 if (response.ok) {
                     const fetchedSessions = await response.json()
-                   if(fetchUserSessions.length) {
-                       setSessions([...fetchedSessions.sessions]);
-                   } else{
-                       setSessions([{
-                           id: uuid(),
-                           firstQuery: `Hello Binge watcher, I'm imdBot! How can I help you today ?`
-                       }])
-                       setSessionId(null)
-                   }
+                    if (fetchedSessions.sessions.length) {
+                        setSessions([...fetchedSessions.sessions]);
+                    }
                 } else {
+                    console.log('err sessison')
                     toast({
                         className: cn(
                             'top-0 right-0 flex fixed md:max-w-[420px] md:top-4 md:right-4'
@@ -160,6 +156,7 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
             }])
         }
     }, [sessionId])
+
     const messagesContainerRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -176,10 +173,15 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
             if (message.isUserMessage && !id) {
                 setMessages(prev => [message, ...prev]);
             }
+
             if (message.isUserMessage && !sessionId) {
                 setSessionId(newSessionId)
-                setSessions(prev => [...prev, prev[0] = { ...prev[0], firstQuery: message.text }]);
+                setSessions(prev => {
+                    const newSession = { id: newSessionId, firstQuery: message.text }
+                    return [newSession, ...prev]
+                });
             }
+
             const response = await fetch('/api', {
                 method: 'POST',
                 headers: {
@@ -227,21 +229,26 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
                 }
             });
 
-            setIServingResponse(true);
+
         } catch (error) {
             setIsError(true);
             console.log(error);
         } finally {
             setIsLoading(false);
-            setIServingResponse(false);
         }
     };
 
     const handleSessionChange = (session: UserSession | null) => {
+
         if (!session) {
-            setSessionId(null);
             const newSessionId = uuid();
+            setSessionId(newSessionId);
             setSessions(prev => [...prev, { id: newSessionId, firstQuery: "Hello Binge watcher, I'm imdBot! How can I help you today ?" }]);
+            setMessages([{
+                _id: "default_message_id",
+                isUserMessage: false,
+                text: `Hello Binge watcher, I'm imdBot! How can I help you today ?`
+            }])
             return;
         }
         if (session.firstQuery !== "Hello Binge watcher, I'm imdBot! How can I help you today ?") {
@@ -278,10 +285,19 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
                 }
             }
             fetchMessages(session.id, clientId);
-        }else{
-            setSessionId(null);
+        } else {
+            setMessages(
+                [
+                    {
+                        _id: "default_message_id",
+                        isUserMessage: false,
+                        text: `Hello Binge watcher, I'm imdBot! How can I help you today ?`
+                    }
+                ]
+            )
         }
     }
+
     return (
         <MessagesContext.Provider
             value={{

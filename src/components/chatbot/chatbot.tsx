@@ -10,7 +10,7 @@ import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 export const ChatBot: FC = () => {
     return (
         <Sheet >
-            <div className="fixed xl:right-[5%] bottom-0 w-[94%] lg:w-4/5 xl:w-3/5 bg-card border border-input rounded-t-md">
+            <div className="fixed xl:right-[2%] bottom-0 w-[94%] lg:w-4/5 xl:w-3/5 bg-card border border-input rounded-t-md">
                 <SheetTrigger className="flex items-center w-full h-full ring-offset-background">
                     <ChatbotHeader />
                 </SheetTrigger>

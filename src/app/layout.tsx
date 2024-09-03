@@ -20,16 +20,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className}`}>
-        
-        <nav className="sticky top-0 z-10 flex h-[57px] w-full items-center justify-center gap-5 border-b bg-background px-4">
-            <Link className="underline" href="/">Home</Link>
-            <Link className="underline" href="/movies/page/1">Movies</Link>
-            <Link className="underline" href="/actor/page/1">Actors</Link>
-            <Link className="underline"  href="/director/page/1">Directors</Link>
-          </nav>
+        <nav className="sticky top-0 z-10 text-base font-bold flex h-[57px] w-full items-center justify-start gap-5 border-b bg-background px-4">
+          <Link href="/">Home</Link>
+          <Link href="/movies/page/1">Movies</Link>
+          <Link href="/actor/page/1">Actors</Link>
+          <Link href="/director/page/1">Directors</Link>
+        </nav>
         {children}
-        <Toaster/>
-        </body>
+        <Toaster />
+      </body>
     </html>
   );
 }

@@ -1,5 +1,5 @@
 "use client"
-import { FC, useContext } from "react";
+import { FC, useContext, useEffect } from "react";
 import { MessagesContext } from "@/context/messages";
 import { cn } from "@/lib/utils";
 import ChatbotMessage from "./ChatbotMessage";
@@ -17,19 +17,31 @@ const ChatbotMessages: FC<{ className: string }> = ({ className }) => {
         className
       )}
     >
-      <div className="flex-1 flex-grow" ref={messagesContainerRef} />
-      {isFetchingMessages ? (
-        <div className="flex justify-center items-center h-full">
-          <SyncLoader size={8} />
-        </div>
-      ) : (
-        <>
-          {(isLoading && !isServingResponse) && <SyncLoader size={8} />}
-          {inverseMessages.map((message) => (
-            <ChatbotMessage message={message} key={uuid()} />
-          ))}
-        </>
-      )}
+      <div className="flex-1 flex-grow" />
+      <span className="h-5 w-2 flex mx-auto" ref={messagesContainerRef}></span>
+      {
+        isFetchingMessages
+          ?
+          (
+            <div className="flex justify-center items-center h-full">
+              <SyncLoader size={8} />
+            </div>
+          )
+          :
+          (
+            <>
+              {
+                (isLoading && !isServingResponse)
+                &&
+                <SyncLoader size={8} />
+              }
+              {
+                inverseMessages.map((message) => (
+                  <ChatbotMessage message={message} key={uuid()} />
+                ))
+              }
+            </>
+          )}
     </div>
   );
 };
