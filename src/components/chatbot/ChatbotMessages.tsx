@@ -7,7 +7,7 @@ import { SyncLoader } from "react-spinners"
 import uuid from "react-uuid";
 
 const ChatbotMessages: FC<{ className: string }> = ({ className }) => {
-  const { messages, isLoading, isServingResponse, isFetchingMessages, messagesContainerRef } = useContext(MessagesContext);
+  const { messages, isLoading, isFetchingMessages, messagesContainerRef } = useContext(MessagesContext);
   const inverseMessages = [...messages];
 
   return (
@@ -31,7 +31,7 @@ const ChatbotMessages: FC<{ className: string }> = ({ className }) => {
           (
             <>
               {
-                (isLoading && !isServingResponse)
+                (isLoading)
                 &&
                 <SyncLoader size={8} />
               }
