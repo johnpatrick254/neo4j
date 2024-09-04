@@ -18,9 +18,8 @@ export async function POST(request: Request) {
             });
         } else {
             promptResponse = await movieChain.invoke({
-                input: question, sessionId: clientId, retry: false,
+                input: question, sessionId: sessionId, clientId: clientId, retry: false,
                 initialResponseId: '',
-                clientId: clientId
             });
         }
         console.log("\n\n>>>>> PROMPT\n\n RESPONSE", promptResponse, "\n\n >>>>>\n")
@@ -35,7 +34,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const queryParams = Object.fromEntries(url.searchParams.entries()) as { sessionId: string, clientId: string };
     try {
-        const messages = await getSessionMessages(queryParams.sessionId, queryParams.clientId)
+        const messages = await getSessionMessages(queryParams.clientId,queryParams.sessionId,)
         console.log(`\n>>>>>>>>>\nFETCHED MESSAGES\n USER: ${queryParams.clientId} SESSION: ${queryParams.sessionId}\n`, messages, "\n>>>>>>>>>\n")
         return NextResponse.json({ messages })
     } catch (error) {

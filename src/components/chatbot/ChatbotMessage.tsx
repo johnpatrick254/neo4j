@@ -1,13 +1,10 @@
 "use client";
-import { cn } from "@/lib/utils";
 import { FC, useContext, useEffect, useRef, useState } from "react";
 import MarkdownLite from "./MarkdownLite";
 import { Message } from "@/utils/types";
 import { MessagesContext } from "@/context/messages";
 import { ChevronLeft, ChevronRight, Copy, Edit, RotateCw, Save, SparklesIcon, X } from "lucide-react";
 import { WithToolTip } from "../ui/WithToolTip";
-import star from "../../../public/star-2-svgrepo-com.svg";
-import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 interface ChatbotMessageProps {
@@ -15,7 +12,7 @@ interface ChatbotMessageProps {
 }
 
 const ChatbotMessage: FC<ChatbotMessageProps> = ({ message }) => {
-  const { isLoading, isServingResponse, messages, handlePromptResponse, messagesContainerRef } = useContext(MessagesContext);
+  const { isLoading, messages, handlePromptResponse, sessionStart } = useContext(MessagesContext);
   const previousResponses = message.previousResponse ? [message, ...message.previousResponse] : [message];
   const [currentIndex, setCurrentIndex] = useState((previousResponses.length - 1));
   const [editedContent, setEditedContent] = useState(message.text);
@@ -23,8 +20,7 @@ const ChatbotMessage: FC<ChatbotMessageProps> = ({ message }) => {
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const isLatestAIMessage = !message.isUserMessage && messages[0]._id === message._id;
-  const isLastMessage = messages[0]._id === message._id
+  const isLatestAIMessage = !message.isUserMessage && messages[0]?._id === message._id && messages.length > 1;
   let currentMessage = previousResponses[currentIndex];
   useEffect(() => {
     if (isEditing && editTextareaRef.current) {
@@ -34,7 +30,7 @@ const ChatbotMessage: FC<ChatbotMessageProps> = ({ message }) => {
   }, [isEditing]);
 
   useEffect(() => {
-    if (isLatestAIMessage) {
+    if (isLatestAIMessage && sessionStart) {
       setIsTyping(true);
       let i = 0;
       const typingInterval = setInterval(() => {
@@ -143,7 +139,7 @@ const ChatbotMessage: FC<ChatbotMessageProps> = ({ message }) => {
                   <MarkdownLite text={currentMessage.text} />
                 )
               )}
-              {!isServingResponse && (
+              { (
                 <div className={`flex justify-start gap-2.5  ${isLoading ? "opacity-0" : ""}`}>
                   {isEditing ? (
                     <>
@@ -189,7 +185,7 @@ const ChatbotMessage: FC<ChatbotMessageProps> = ({ message }) => {
                       <ChevronRight onClick={handleNext} className="cursor-pointer" size={15} color="#000000" />
                     </div>
                   }
-                  {(!message.isUserMessage && !isServingResponse) && (
+                  {(!message.isUserMessage) && (
                     <>
                       <WithToolTip key={'copy'} component={<Copy className="cursor-pointer" onClick={handleCopy} size={18} color="#000000" />} text="Copy" />
                       <WithToolTip key={'retry'} component={<RotateCw className="cursor-pointer" onClick={handleRetry} size={18} color="#000000" />} text="Retry" />

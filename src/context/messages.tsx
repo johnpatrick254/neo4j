@@ -21,7 +21,7 @@ interface MessagesProviderProps {
 interface MessagesContextType {
     isError: boolean;
     isLoading: boolean;
-    isServingResponse: boolean;
+    sessionStart: boolean;
     isFetchingMessages: boolean;
     clientId: string;
     textareaRef: MutableRefObject<HTMLTextAreaElement>;
@@ -35,7 +35,7 @@ interface MessagesContextType {
 export const MessagesContext = createContext<MessagesContextType>({
     isError: false,
     isLoading: false,
-    isServingResponse: false,
+    sessionStart: false,
     isFetchingMessages: false,
     clientId: "123456",
     messages: [],
@@ -50,9 +50,8 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
     const [clientId, setClientId] = useState('123456');
     const [sessionId, setSessionId] = useState<null | string>(null)
     const [isLoading, setIsLoading] = useState(false);
-    const [isServingResponse, setIServingResponse] = useState(false);
+    const [sessionStart, setSessionStart] = useState(false);
     const [isFetchingMessages, setIsFetchingMessages] = useState(true);
-
     const [isError, setIsError] = useState(false);
 
     const [messages, setMessages] = useState<Message[]>([{
@@ -168,6 +167,12 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
             setIsError(false);
             setIsLoading(true);
             scrollToBottom();
+            if (id) {
+                setSessionStart(false)
+            } else {
+                setSessionStart(true)
+            };
+
             const newSessionId = uuid();
 
             if (message.isUserMessage && !id) {
@@ -182,12 +187,36 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
                 });
             }
 
+            let currentSession: UserSession | UserSession[] = sessions.filter(session => session.id === sessionId);
+
+            if (!currentSession.length) {
+                currentSession = {
+                    id: newSessionId,
+                    firstQuery: message.text
+                }
+            } else {
+                currentSession = currentSession[0]
+            }
+
+            if (currentSession.firstQuery === "Hello Binge watcher, I'm imdBot! How can I help you today ?") {
+                setSessions(prev => {
+                    let updatedSessions = [...prev]
+                    updatedSessions.map(session => {
+                        if (session.id === sessionId) {
+                            session.firstQuery = message.text
+                        }
+                    })
+                    return updatedSessions;
+                })
+            }
+
             const response = await fetch('/api', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ question: message.text, clientId, sessionId: sessionId ?? newSessionId, retry: id ? true : false, initialResponseId: id ?? '' }),
+
             });
 
             if (!response.ok) {
@@ -228,7 +257,7 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
                     return updatedMessages;
                 }
             });
-
+            setSessionStart(true)
 
         } catch (error) {
             setIsError(true);
@@ -265,8 +294,11 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
 
                     if (response.ok) {
                         const fetchedMessages = await response.json()
-                        console.log(fetchedMessages)
-                        setMessages([...fetchedMessages.messages, ...messages]);
+                        setMessages([...fetchedMessages.messages, {
+                            _id: "default_message_id",
+                            isUserMessage: false,
+                            text: `Hello Binge watcher, I'm imdBot! How can I help you today ?`
+                        }]);
                     } else {
                         toast({
                             className: cn(
@@ -302,7 +334,7 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
         <MessagesContext.Provider
             value={{
                 messagesContainerRef,
-                isServingResponse,
+                sessionStart,
                 isFetchingMessages,
                 clientId,
                 messages,
