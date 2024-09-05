@@ -20,7 +20,7 @@ export default async function Movie({ params }: { params: { title: string } }) {
     const movieData = await movieQuery(movieName);
 
     return (<>
-        <main className="flex min-h-screen flex-col items-center justify-between px-24 py-8">
+        <main className="flex min-h-screen flex-col items-center justify-between px-24 pt-16">
             {
                 !movieData
                     ?

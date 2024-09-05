@@ -18,7 +18,7 @@ export default async function Actor({ params }: { params: { name: string } }) {
   const baseURL = process.env.NEXT_PUBLIC_BASE_URL
 
   return (<>
-    <main className="flex min-h-screen flex-col items-center justify-between px-24 py-8">
+    <main className="flex min-h-screen flex-col items-center justify-between px-24 pt-1">
       {
         !actorData ?
           <div>
