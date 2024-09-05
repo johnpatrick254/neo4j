@@ -12,12 +12,12 @@ export async function POST(request: Request) {
 
         console.log("\n>>>>> QUERY\n\n", data, "\n\n >>>>>\n")
         if (data.retry) {
-            promptResponse = await movieChain.invoke({
+            promptResponse = await movieChain({
                 input: question, sessionId: sessionId, clientId: clientId, retry: data.retry,
                 initialResponseId: data.initialResponseId
             });
         } else {
-            promptResponse = await movieChain.invoke({
+            promptResponse = await movieChain({
                 input: question, sessionId: sessionId, clientId: clientId, retry: false,
                 initialResponseId: '',
             });
