@@ -59,7 +59,7 @@ export const cypherGenerationTemplate = `
   {question}
 `
 export const evaluateCypherTemplate = `
-    You are an expert Neo4j Developer evaluating a Cypher statement written by an AI.
+     You are an expert Neo4j Developer evaluating a Cypher statement written by an AI.
 
     Check that the cypher statement provided below against the database schema to check that
     the statement will answer the user's question.
@@ -135,50 +135,54 @@ export const authoratativeAnswerPrompt = `
     {context}
   `
 export const saveHIstoryCypher = `
-    MERGE (session:Session { id: $sessionId }) // (1)
+        MERGE (client:Client {id: $clientId})
+        MERGE (session:Session {id: $sessionId})
+        MERGE (client)-[:STARTED]->(session)
 
-    // <2> Create new response
-    CREATE (response:Response {
-      id: randomUuid(),
-      createdAt: datetime(),
-      source: $source,
-      input: $input,
-      output: $output,
-      rephrasedQuestion: $rephrasedQuestion,
-      cypher: $cypher,
-      ids: $ids
-    })
-    CREATE (session)-[:HAS_RESPONSE]->(response)
+        // Create new response
+        CREATE (response:Response {
+        id: randomUuid(),
+        createdAt: datetime(),
+        source: $source,
+        input: $input,
+        output: $output,
+        retry: $retry,
+        initialResponseId: $initialResponseId,
+        rephrasedQuestion: $rephrasedQuestion,
+        cypher: $cypher
+        })
+        CREATE (session)-[:HAS_RESPONSE]->(response)
 
-    WITH session, response
+        WITH session, response
 
-    CALL {
-    WITH session, response
+        CALL {
+        WITH session, response
 
-      // <3> Remove existing :LAST_RESPONSE relationship if it exists
-      MATCH (session)-[lrel:LAST_RESPONSE]->(last)
-      DELETE lrel
+        // Remove existing :LAST_RESPONSE relationship if it exists
+        OPTIONAL MATCH (session)-[lrel:LAST_RESPONSE]->(last)
+        DELETE lrel
 
-      // <4? Create :NEXT relationship
-      CREATE (last)-[:NEXT]->(response)
-    }
+        // Create :NEXT relationship if there was a last response
+        WITH session, response, last
+        WHERE last IS NOT NULL
+        CREATE (last)-[:NEXT]->(response)
+        }
 
+        // Create new :LAST_RESPONSE relationship
+        CREATE (session)-[:LAST_RESPONSE]->(response)
 
-    // <5> Create new :LAST_RESPONSE relationship
-    CREATE (session)-[:LAST_RESPONSE]->(response)
+        // Create relationship to context nodes
+        WITH response
 
-    // <6> Create relationship to context nodes
-    WITH response
+        CALL {
+        WITH response
+        UNWIND $ids AS id
+        MATCH (context)
+        WHERE elementId(context) = id
+        CREATE (response)-[:CONTEXT]->(context)
 
-    CALL {
-      WITH response
-      UNWIND $ids AS id
-      MATCH (context)
-      WHERE elementId(context) = id
-      CREATE (response)-[:CONTEXT]->(context)
+        RETURN count(*) AS count
+        }
 
-      RETURN count(*) AS count
-    }
-
-    RETURN DISTINCT response.id AS id
-  `
+        RETURN DISTINCT response.id AS id
+        `

@@ -2,10 +2,9 @@ import { ChatOpenAI } from "@langchain/openai";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { Neo4jGraph } from "@langchain/community/graphs/neo4j_graph";
 import { BaseLanguageModel } from "@langchain/core/language_models/base";
-import { cypherGenerationTemplate } from "@/utils/templates";
+import { authoratativeAnswerPrompt, cypherGenerationTemplate, evaluateCypherTemplate, saveHIstoryCypher } from "@/utils/templates";
 import { RunnablePassthrough, RunnableSequence } from "@langchain/core/runnables";
 import { JsonOutputParser, StringOutputParser } from "@langchain/core/output_parsers";
-import { randomUUID } from "crypto";
 import { ChatbotResponse, CypherEvaluationChainInput, CypherEvaluationChainOutput, CypherRetrievalThroughput, RephraseQuestionInput } from "@/utils/types";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 
@@ -35,19 +34,10 @@ export async function initCypherGenerationChain(
     ]);
 }
 
-
-
-
-
-
-// tag::interface[]
-export type GenerateAuthoritativeAnswerInput = {
+type GenerateAuthoritativeAnswerInput = {
     question: string;
     context: string | undefined;
 };
-// end::interface[]
-
-
 
 export async function recursivelyEvaluate(
     graph: Neo4jGraph,
@@ -68,15 +58,15 @@ export async function recursivelyEvaluate(
     // return cypher;
     let errors = ["N/A"];
     let tries = 0;
-
-    while (tries < 5 && errors.length > 0) {
+    const schema = graph.getSchema()
+    while (tries < 3 && errors.length > 0) {
         tries++;
 
         try {
             // Evaluate Cypher
             const evaluation = await evaluatorChain.invoke({
                 question,
-                schema: graph.getSchema(),
+                schema ,
                 cypher,
                 errors,
             });
@@ -108,14 +98,12 @@ export async function getResults(
             return results;
         } catch (e: any) {
             retries++;
-
             const evaluation = await evaluationChain.invoke({
                 cypher,
                 question: input.question,
                 schema: graph.getSchema(),
                 errors: [e.message],
             });
-
             cypher = evaluation?.cypher;
         }
     }
@@ -167,69 +155,14 @@ export async function saveHistory(
     ids: string[],
     cypher: string | null = null
 ): Promise<{ responseId: string; initialResponseId: string; }> {
-    // TODO: Execute the Cypher statement from /cypher/save-response.cypher in a write transaction
     const graph = await Neo4jGraph.initialize({
         url: NEO4J_URL,
         password: NEO4J_PASSWORD,
         username: NEO4J_USERNAME
     })
 
-    await graph.refreshSchema()
-    const saveHistoryCypher = `
-            MERGE (client:Client {id: $clientId})
-            MERGE (session:Session {id: $sessionId})
-            MERGE (client)-[:STARTED]->(session)
-
-            // Create new response
-            CREATE (response:Response {
-            id: randomUuid(),
-            createdAt: datetime(),
-            source: $source,
-            input: $input,
-            output: $output,
-            retry: $retry,
-            initialResponseId: $initialResponseId,
-            rephrasedQuestion: $rephrasedQuestion,
-            cypher: $cypher
-            })
-            CREATE (session)-[:HAS_RESPONSE]->(response)
-
-            WITH session, response
-
-            CALL {
-            WITH session, response
-
-            // Remove existing :LAST_RESPONSE relationship if it exists
-            OPTIONAL MATCH (session)-[lrel:LAST_RESPONSE]->(last)
-            DELETE lrel
-
-            // Create :NEXT relationship if there was a last response
-            WITH session, response, last
-            WHERE last IS NOT NULL
-            CREATE (last)-[:NEXT]->(response)
-            }
-
-            // Create new :LAST_RESPONSE relationship
-            CREATE (session)-[:LAST_RESPONSE]->(response)
-
-            // Create relationship to context nodes
-            WITH response
-
-            CALL {
-            WITH response
-            UNWIND $ids AS id
-            MATCH (context)
-            WHERE elementId(context) = id
-            CREATE (response)-[:CONTEXT]->(context)
-
-            RETURN count(*) AS count
-            }
-
-            RETURN DISTINCT response.id AS id
-        `;
-
     const res = await graph.query<{ id: string }>(
-        saveHistoryCypher,
+        saveHIstoryCypher,
         {
             clientId,
             sessionId,
@@ -243,7 +176,6 @@ export async function saveHistory(
             initialResponseId
         },
         "WRITE")
-    console.log(res ?? res)
     return { responseId: res && res.length ? res[0].id : "", initialResponseId };
 
 }
@@ -279,36 +211,7 @@ export async function getHistory(
 export function initGenerateAuthoritativeAnswerChain(
     llm: BaseLanguageModel
 ): RunnableSequence<GenerateAuthoritativeAnswerInput, string> {
-    // tag::prompt[]
-    const answerQuestionPrompt = PromptTemplate.fromTemplate(`
-    Use the following context to answer the following question.
-    The context is provided by an authoritative source, you must never doubt
-    it or attempt to use your pre-trained knowledge to correct the answer.
-
-    Make the answer sound like it is a response to the question.
-    Do not mention that you have based your response on the context.
-
-    Here is an example:
-
-    Question: Who played Woody in Toy Story?
-    Context: ['role': 'Woody', 'actor': 'Tom Hanks']
-    Response: Tom Hanks played Woody in Toy Story.
-
-    If no context is provided, say that you don't know,
-    don't try to make up an answer, do not fall back to your internal knowledge.
-    If no context is provided you may also ask for clarification.
-
-    Include links and sources where possible.
-
-    Question:
-    {question}
-
-    Context:
-    {context}
-  `);
-    // end::prompt[]
-
-    // tag::sequence[]
+    const answerQuestionPrompt = PromptTemplate.fromTemplate(authoratativeAnswerPrompt);
     return RunnableSequence.from<GenerateAuthoritativeAnswerInput, string>([
         RunnablePassthrough.assign({
             context: ({ context }) =>
@@ -318,10 +221,8 @@ export function initGenerateAuthoritativeAnswerChain(
         llm,
         new StringOutputParser(),
     ]);
-    // end::sequence[]
 }
 export function initRephraseChain(llm: BaseChatModel) {
-    // TODO: Create Prompt template
     const rephraseQuestionCypher = `
     Given the following conversation and a question,
     rephrase the follow-up question to be a standalone question about the
@@ -371,56 +272,7 @@ export async function initCypherEvaluationChain(
     llm: BaseLanguageModel
 ) {
     // Prompt template
-    const prompt = PromptTemplate.fromTemplate(`
-    You are an expert Neo4j Developer evaluating a Cypher statement written by an AI.
-
-    Check that the cypher statement provided below against the database schema to check that
-    the statement will answer the user's question.
-    Fix any errors where possible.
-
-    The query must:
-    * Only use the nodes, relationships and properties mentioned in the schema.
-    * Assign a variable to nodes or relationships when intending to access their properties.
-    * Use \`IS NOT NULL\` to check for property existence.
-    * Use the \`elementId()\` function to return the unique identifier for a node or relationship as \`_id\`.
-    * For movies, use the tmdbId property to return a source URL.
-      For example: \`'https://www.themoviedb.org/movie/'+ m.tmdbId AS source\`.
-    * For movie titles that begin with "The", move "the" to the end.
-      For example "The 39 Steps" becomes "39 Steps, The" or "the matrix" becomes "Matrix, The".
-    * For the role a person played in a movie, use the role property on the ACTED_IN relationship.
-    * Limit the maximum number of results to 10.
-    * Respond with only a Cypher statement.  No preamble.
-
-    Respond with a JSON object with "cypher" and "errors" keys.
-      * "cypher" - the corrected cypher statement
-      * "corrected" - a boolean
-      * "errors" - A list of uncorrectable errors.  For example, if a label,
-          relationship type or property does not exist in the schema.
-          Provide a hint to the correct element where possible.
-
-    Fixable Example #1:
-    * cypher:
-        MATCH (a:Actor {{name: 'Emil Eifrem'}})-[:ACTED_IN]->(m:Movie)
-        RETURN a.name AS Actor, m.title AS Movie, m.tmdbId AS source,
-        elementId(m) AS _id, m.released AS ReleaseDate, r.role AS Role LIMIT 10
-    * errors: ["Variable \`r\` not defined (line 1, column 172 (offset: 171))"]
-    * response:
-        MATCH (a:Actor {{\name: 'Emil Eifrem'}})-[r:ACTED_IN]->(m:Movie)
-        RETURN a.name AS Actor, m.title AS Movie, m.tmdbId AS source,
-        elementId(m) AS _id, m.released AS ReleaseDate, r.role AS Role LIMIT 10
-
-
-    Schema:
-    {schema}
-
-    Question:
-    {question}
-
-    Cypher Statement:
-    {cypher}
-
-    {errors}
-  `);
+    const prompt = PromptTemplate.fromTemplate(evaluateCypherTemplate);
 
     return RunnableSequence.from<
         CypherEvaluationChainInput,
@@ -455,8 +307,6 @@ export async function createMovieQueryAndHistoryChain() {
         username: NEO4J_USERNAME,
         password: NEO4J_PASSWORD,
     });
-
-    await graph.refreshSchema();
 
     const llm = new ChatOpenAI();
 
