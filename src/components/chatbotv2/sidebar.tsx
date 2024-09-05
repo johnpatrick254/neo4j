@@ -7,18 +7,17 @@ import {
     Settings2,
     SquareUser,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { useContext, useState } from "react"
-import { MessagesContext } from "@/context/messages"
-import uuid from "react-uuid"
+} from "@/components/ui/tooltip";
+import { useContext, useState } from "react";
+import { MessagesContext } from "@/context/messages";
 
 export default function SideBar() {
-    const { handleSessionChange, sessions } = useContext(MessagesContext);
+    const { handleSessionChange, sessions,sessionId } = useContext(MessagesContext);
     const [mouseOver, setMouseOver] = useState(false);
     return (
         <aside style={{ width: !mouseOver ? "3.5rem" : "15rem" }} onMouseEnter={() => setMouseOver(true)} onMouseLeave={() => setMouseOver(false)} className={`hidden backdrop-blur-md aside inset-y fixed overflow-x-hidden left-0 z-20 md:flex h-full flex-col border-r transition-all duration-200 ease-in-out`}>
@@ -50,7 +49,7 @@ export default function SideBar() {
                         <div className="space-y-3 md:max-h-[51vh] xl:max-h-[59vh] z-10 overflow-y-auto">
                             {
                                 sessions.map(session => {
-                                    return <li key={session.id} onClick={() => handleSessionChange(session)} className="flex cursor-pointer w-15 outline-2 text-nowrap text-left justify-start items-center gap-x-4 text-sm truncate" >
+                                    return <li key={session.id} onClick={() => handleSessionChange(session)} className={`flex cursor-pointer w-15 p-1.5 rounded-sm text-nowrap text-left justify-start items-center gap-x-4 text-sm truncate ${session.id === sessionId ? "bg-foreground text-white":""}`} >
                                         <MessageCircleMore className="h-6 w-6" />
                                         <p className="w-[11rem] truncate font-normal">{session.firstQuery}</p>
                                     </li>

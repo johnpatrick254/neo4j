@@ -7,7 +7,7 @@ export function Dashboard() {
         <div className="grid h-screen w-full pl-0 md:pl-[56px]">
             <div className="flex flex-col">
                     <SideBar/>
-                <main className="flex flex-col justify-center items-center pt-12 ">
+                <main className="flex flex-col justify-center items-center">
                     <div className="relative flex h-full min-h-[93vh] w-full flex-col rounded-xl p-4 lg:max-w-[750px]">
                         <div className="h-full" >
                             <ChatbotMessages className="pt-2"/>

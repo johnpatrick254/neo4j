@@ -1,5 +1,4 @@
 "use client"
-
 import { Message, UserSession } from "@/utils/types";
 import uuid from "react-uuid"
 import {
@@ -12,7 +11,6 @@ import {
 } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
-import PreviousMap from "postcss/lib/previous-map";
 
 interface MessagesProviderProps {
     children: ReactNode;
@@ -28,6 +26,7 @@ interface MessagesContextType {
     messagesContainerRef: MutableRefObject<HTMLDivElement>;
     messages: Message[];
     sessions: UserSession[];
+    sessionId:string | null;
     handlePromptResponse: (message: Message, id?: string) => Promise<void>;
     handleSessionChange: (session: UserSession | null) => void;
 }
@@ -43,6 +42,7 @@ export const MessagesContext = createContext<MessagesContextType>({
     handlePromptResponse: async () => { },
     textareaRef: null,
     messagesContainerRef: null,
+    sessionId:null,
     handleSessionChange: (session: UserSession | null) => null
 });
 
@@ -337,6 +337,7 @@ export const MessagesProvider = ({ children }: MessagesProviderProps) => {
                 sessionStart,
                 isFetchingMessages,
                 clientId,
+                sessionId,
                 messages,
                 sessions,
                 handlePromptResponse,
