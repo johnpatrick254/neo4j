@@ -52,7 +52,7 @@ export type CypherEvaluationChainInput = {
     question: string;
     cypher: string;
     schema: string;
-    errors: string[] | string | undefined;
+    errors: string[];
 };
 export type CypherEvaluationChainOutput = {
     cypher: string;
