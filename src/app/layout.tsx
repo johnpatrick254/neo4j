@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
-import WithChatBot from "@/components/chatbot/withchatbot";
 import { Toaster } from "@/components/ui/toaster";
+import { MessagesProvider } from "@/context/messages";
+import { Sheet, SheetContent, SheetHeader, SheetTrigger } from "@/components/ui/sheet";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SideBarMobile } from "@/components/chatbotv2/sidebar";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,14 +24,30 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className}`}>
-        <nav className="sticky top-0 z-10 text-base font-bold flex h-[57px] w-full items-center justify-start gap-5 border-b bg-background px-4">
-          <Link href="/">Home</Link>
-          <Link href="/movies/page/1">Movies</Link>
-          <Link href="/actor/page/1">Actors</Link>
-          <Link href="/director/page/1">Directors</Link>
-        </nav>
-        {children}
-        <Toaster />
+        <MessagesProvider>
+          <TooltipProvider>
+            <nav className="sticky top-0 z-10 text-base font-bold flex h-[57px] w-full items-center justify-start gap-5 border-b bg-background px-4">
+              <Sheet >
+                <SheetTrigger asChild className="md:hidden">
+                  <Avatar>
+                    <AvatarImage src={"profile"} alt="profile-image" />
+                    <AvatarFallback>DP</AvatarFallback>
+                  </Avatar>
+                </SheetTrigger>
+                <SheetContent className="flex flex-col bg-background h-screen ">
+                  <SheetHeader>Menu</SheetHeader>
+                  <SideBarMobile />
+                </SheetContent>
+              </Sheet>
+              <Link href="/">Home</Link>
+              <Link href="/movies/page/1">Movies</Link>
+              <Link href="/actor/page/1">Actors</Link>
+              <Link href="/director/page/1">Directors</Link>
+            </nav>
+            {children}
+            <Toaster />
+          </TooltipProvider>
+        </MessagesProvider>
       </body>
     </html>
   );

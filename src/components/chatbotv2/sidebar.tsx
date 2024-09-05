@@ -17,9 +17,9 @@ import { useContext, useState } from "react";
 import { MessagesContext } from "@/context/messages";
 
 export default function SideBar() {
-    const { handleSessionChange, sessions,sessionId } = useContext(MessagesContext);
+    const { handleSessionChange, sessions, sessionId } = useContext(MessagesContext);
     const [mouseOver, setMouseOver] = useState(false);
-    return (
+    return <>
         <aside style={{ width: !mouseOver ? "3.5rem" : "15rem" }} onMouseEnter={() => setMouseOver(true)} onMouseLeave={() => setMouseOver(false)} className={`hidden backdrop-blur-md aside inset-y fixed overflow-x-hidden left-0 z-20 md:flex h-full flex-col border-r transition-all duration-200 ease-in-out`}>
             <nav className="grid gap-5 w-full p-2">
                 <Tooltip>
@@ -49,7 +49,7 @@ export default function SideBar() {
                         <div className="space-y-3 md:max-h-[51vh] xl:max-h-[59vh] z-10 overflow-y-auto">
                             {
                                 sessions.map(session => {
-                                    return <li key={session.id} onClick={() => handleSessionChange(session)} className={`flex cursor-pointer w-15 p-1.5 rounded-sm text-nowrap text-left justify-start items-center gap-x-4 text-sm truncate ${session.id === sessionId ? "bg-foreground text-white":""}`} >
+                                    return <li key={session.id} onClick={() => handleSessionChange(session)} className={`flex cursor-pointer w-15 p-1.5 rounded-sm text-nowrap text-left justify-start items-center gap-x-4 text-sm truncate ${session.id === sessionId ? "bg-foreground text-white" : ""}`} >
                                         <MessageCircleMore className="h-6 w-6" />
                                         <p className="w-[11rem] truncate font-normal">{session.firstQuery}</p>
                                     </li>
@@ -106,6 +106,81 @@ export default function SideBar() {
                     </TooltipContent>
                 </Tooltip>
             </nav>
-        </aside>
-    )
+        </aside >
+    </>
+}
+
+export function SideBarMobile() {
+    const { handleSessionChange, sessions, sessionId } = useContext(MessagesContext);
+    console.log(sessions)
+    return < div className="flex flex-col h-full justify-between md:hidden" >
+        <nav className="grid gap-5 w-full p-2">
+
+            <ul className="flex flex-col pl-2 w-full gap-y-3 font-semibold">
+                <li onClick={() => handleSessionChange(null)} className="flex mb-2 cursor-pointer w-15 text-nowrap text-center justify-start items-center gap-x-4 text-sm" >
+                    <PlusIcon />
+                    <p>New chat</p>
+                </li>
+                <h3 className="text-sm cursor-pointer" >Recent</h3>
+                <div className="space-y-3 md:max-h-[51vh] xl:max-h-[59vh] z-10 overflow-y-auto">
+                    {
+                        sessions.map(session => {
+                            return <li key={session.id} onClick={() => handleSessionChange(session)} className={`flex cursor-pointer w-15 p-1.5 rounded-sm text-nowrap text-left justify-start items-center gap-x-4 text-sm truncate ${session.id === sessionId ? "bg-foreground text-white" : ""}`} >
+                                <MessageCircleMore className="h-6 w-6" />
+                                <p className="w-[11rem] truncate font-normal">{session.firstQuery}</p>
+                            </li>
+                        })
+                    }
+                </div>
+
+            </ul>
+        </nav>
+        <nav className="mt-auto grid gap-1 p-2">
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-lg"
+                        aria-label="Settings"
+                    >
+                        <Settings2 className="size-5" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={5}>
+                    Settings
+                </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="mt-auto rounded-lg"
+                        aria-label="Help"
+                    >
+                        <LifeBuoy className="size-5" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={5}>
+                    Help
+                </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="mt-auto rounded-lg"
+                        aria-label="Account"
+                    >
+                        <SquareUser className="size-5" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={5}>
+                    Account
+                </TooltipContent>
+            </Tooltip>
+        </nav>
+    </ div>
 }

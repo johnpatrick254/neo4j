@@ -41,7 +41,7 @@ const MarkdownLite: FC<MarkdownLiteProps> = ({ text }) => {
   }
 
   return (
-    <p>
+    <p style={{wordBreak:"break-word"}}>
       {parts.map((part, i) => (
         <Fragment key={i}>{part}</Fragment>
       ))}
